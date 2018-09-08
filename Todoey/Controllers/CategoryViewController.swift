@@ -7,15 +7,12 @@
 //
 
 import UIKit
-import CoreData
 import RealmSwift
 
 class CategoryViewController: UITableViewController {
     
-    var categories: Results<Category>?
-    
-    //let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     let realm = try! Realm()
+    var categories: Results<Category>?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -24,6 +21,7 @@ class CategoryViewController: UITableViewController {
     }
 
     //MARK: - Add Category Button
+    
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         
         var textField = UITextField()
