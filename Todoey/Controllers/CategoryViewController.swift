@@ -8,12 +8,14 @@
 
 import UIKit
 import CoreData
+import RealmSwift
 
 class CategoryViewController: UITableViewController {
     
-    var categoryArray = [Category]()
+    var categories: Results<Category>?
     
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    //let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    let realm = try! Realm()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -21,63 +23,45 @@ class CategoryViewController: UITableViewController {
         loadData()
     }
 
+    //MARK: - Add Category Button
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         
         var textField = UITextField()
-        let alert = UIAlertController(title: "Add new Todoey Category", message: "", preferredStyle: .alert)
         
-        let action = UIAlertAction(title: "Add Category", style: .default) {
-            (action) in
-            
-            let newCategory = Category(context: self.context)
-            newCategory.name = textField.text!
-            self.categoryArray.append(newCategory)
-            
-            self.saveData()
-        }
+        let alert = UIAlertController(title: "Add New Category", message: "", preferredStyle: .alert)
         
-        alert.addTextField { (alertTextField) in
-            alertTextField.placeholder = "Enter name of new Todo List Category"
-            textField = alertTextField
+        let action = UIAlertAction(title: "Add", style: .default) { (action) in
+            
+            let newCategory = Category()
+            newCategory.title = textField.text!
+            
+            self.save(category: newCategory)
+            
         }
         
         alert.addAction(action)
+        
+        alert.addTextField { (field) in
+            textField = field
+            textField.placeholder = "Add a new category"
+        }
+        
         present(alert, animated: true, completion: nil)
         
-//        var textField = UITextField()
-//        let alert = UIAlertController(title: "Add New TodoeyItem", message: "", preferredStyle: .alert)
-//
-//        let action = UIAlertAction(title: "Add Item", style: .default) {
-//            (action) in
-//            //what will happen when user click Add Item on UIAlert
-//
-//            let newItem = Item(context: self.context)
-//            newItem.title = textField.text!
-//            newItem.done = false
-//            self.itemArray.append(newItem)
-//
-//            self.saveItems()
-//        }
-//
-//        alert.addTextField { (alertTextField) in
-//            alertTextField.placeholder = "Enter name of new item"
-//            textField = alertTextField
-//        }
-//
-//        alert.addAction(action)
-//        present(alert, animated: true, completion: nil)
     }
     
     //MARK: - TableView Datasource Methods
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categoryArray.count
+        //Nil Coalescing Operator
+        return categories?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
         
-        cell.textLabel?.text = categoryArray[indexPath.row].name
+        cell.textLabel?.text = categories?[indexPath.row].title ?? "No Categories added yet"
+        //print("THIS IS IT", cell.textLabel?.text)
         return cell
     }
     
@@ -91,7 +75,7 @@ class CategoryViewController: UITableViewController {
         let destinationVC = segue.destination as! TodoListViewController
         
         if let indexPath = tableView.indexPathForSelectedRow {
-            destinationVC.selectedCategory = categoryArray[indexPath.row]
+            destinationVC.selectedCategory = categories?[indexPath.row]
         }
     }
     
@@ -99,9 +83,11 @@ class CategoryViewController: UITableViewController {
     
     
     //MARK: - Data Manipulation Methods
-    func saveData() {
+    func save(category: Category) {
         do {
-            try context.save()
+            try realm.write {
+                realm.add(category)
+            }
         } catch {
             print("Error saving context \(error)")
         }
@@ -109,13 +95,7 @@ class CategoryViewController: UITableViewController {
     }
     
     func loadData() {
-        do {
-            let request : NSFetchRequest<Category> = Category.fetchRequest()
-            categoryArray = try context.fetch(request)
-        } catch {
-            print("Error fetching data from context \(error)")
-        }
-        
+        categories = realm.objects(Category.self)
         tableView.reloadData()
     }
     
@@ -128,11 +108,10 @@ class CategoryViewController: UITableViewController {
         let action = UIAlertAction(title: "Add Category", style: .default) {
             (action) in
             
-            let newCategory = Category(context: self.context)
-            newCategory.name = textField.text!
-            self.categoryArray.append(newCategory)
+            let newCategory = Category()
+            newCategory.title = textField.text!
             
-            self.saveData()
+            self.save(category: newCategory)
         }
         
         alert.addTextField { (alertTextField) in
